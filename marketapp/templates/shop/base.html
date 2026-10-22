@@ -23,8 +23,10 @@
 
 				<nav class="nav" id="nav">
 					<a href="{% url 'product_list' %}">Katalog</a>
-					{% if user.is_authenticated %} {% if user.is_staff %}<a href="{% url 'panel_dashboard' %}">Panel</a>{% endif
-					%}
+					{% if user.is_authenticated %}
+						{% if user.is_staff %}
+							<a href="{% url 'panel_dashboard' %}">Panel</a>
+						{% endif %}
 					<a href="{% url 'profile' %}">{{ user.first_name|default:user.username }}</a>
 					<form method="post" action="{% url 'logout' %}" class="inline">
 						{% csrf_token %}<button class="link">Chiqish</button>
