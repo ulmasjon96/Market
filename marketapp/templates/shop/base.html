@@ -1,0 +1,58 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}MyShop{% endblock %}</title>
+  <link rel="stylesheet" href="{% static 'includes/components.css' %}">
+  <link rel="stylesheet" href="{% static 'shop/style.css' %}">
+  {% block extra_head %}{% endblock %}
+</head>
+<body>
+  <header class="header">
+    <div class="container header__inner">
+      <a href="{% url 'home' %}" class="logo">MyShop</a>
+
+      <form action="{% url 'product_list' %}" method="get" class="search">
+        <input type="search" name="q" value="{{ q|default:'' }}" placeholder="Mahsulot qidirish...">
+        <button type="submit">Qidirish</button>
+      </form>
+
+      <button class="burger" id="burger" aria-label="Menyu">☰</button>
+
+      <nav class="nav" id="nav">
+        <a href="{% url 'product_list' %}">Katalog</a>
+        {% if user.is_authenticated %}
+          {% if user.is_staff %}<a href="{% url 'panel_dashboard' %}">Panel</a>{% endif %}
+          <a href="{% url 'profile' %}">{{ user.first_name|default:user.username }}</a>
+          <form method="post" action="{% url 'logout' %}" class="inline">
+            {% csrf_token %}<button class="link">Chiqish</button>
+          </form>
+        {% else %}
+          <a href="{% url 'login' %}">Kirish</a>
+          <a href="{% url 'register' %}">Ro'yxatdan o'tish</a>
+        {% endif %}
+        <a href="{% url 'cart_detail' %}" class="cart-link">
+          🛒 Savat <span class="badge" id="cart-count">{{ cart_count|default:0 }}</span>
+        </a>
+      </nav>
+    </div>
+  </header>
+
+  {% if messages %}
+  <div class="container messages">
+    {% for m in messages %}<div class="alert alert--{{ m.tags }}">{{ m }}</div>{% endfor %}
+  </div>
+  {% endif %}
+
+  <main class="container main">{% block content %}{% endblock %}</main>
+
+  <footer class="footer">
+    <div class="container">© {% now "Y" %} MyShop. Barcha huquqlar himoyalangan.</div>
+  </footer>
+
+  <script src="{% static 'shop/main.js' %}"></script>
+  {% block extra_js %}{% endblock %}
+</body>
+</html>

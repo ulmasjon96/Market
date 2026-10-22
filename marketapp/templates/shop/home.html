@@ -1,0 +1,54 @@
+{% extends 'shop/base.html' %}
+{% block title %}MyShop — Bosh sahifa{% endblock %}
+
+{% block content %}
+<section class="hero">
+  <div class="hero__text">
+    <h1>Sifatli mahsulotlar — qulay narxlarda</h1>
+    <p>Buyurtma bering, uyingizgacha yetkazib beramiz.</p>
+    <a href="{% url 'product_list' %}" class="btn btn--primary">Katalogga o'tish</a>
+  </div>
+</section>
+
+{% if categories %}
+<section class="section">
+  <h2 class="section__title">Kategoriyalar</h2>
+  <div class="categories">
+    {% for c in categories %}
+      <a href="{% url 'category' c.slug %}" class="category-card">
+        {% if c.image %}<img src="{{ c.image.url }}" alt="{{ c.name }}" loading="lazy">{% endif %}
+        <span>{{ c.name }}</span>
+      </a>
+    {% endfor %}
+  </div>
+</section>
+{% endif %}
+
+{% if sale_products %}
+<section class="section">
+  <div class="section__head">
+    <h2 class="section__title">🔥 Chegirmalar</h2>
+    <a href="{% url 'product_list' %}">Barchasi →</a>
+  </div>
+  <div class="products">
+    {% for product in sale_products %}
+      {% include 'shop/includes/product_card.html' %}
+    {% endfor %}
+  </div>
+</section>
+{% endif %}
+
+<section class="section">
+  <div class="section__head">
+    <h2 class="section__title">Yangi mahsulotlar</h2>
+    <a href="{% url 'product_list' %}">Barchasi →</a>
+  </div>
+  <div class="products">
+    {% for product in new_products %}
+      {% include 'shop/includes/product_card.html' %}
+    {% empty %}
+      <p class="muted">Hozircha mahsulotlar yo'q.</p>
+    {% endfor %}
+  </div>
+</section>
+{% endblock %}
