@@ -1,0 +1,21 @@
+{% extends 'shop/base.html' %}
+{% block title %}Sevimlilar — MyShop{% endblock %}
+
+{% block content %}
+<section class="section wishlist-page">
+  <div class="section__head">
+    <div><span class="section__kicker">SAQLAB QO'YILGANLAR</span><h1 class="section__title">Sevimli mahsulotlar</h1></div>
+    <span class="catalog__count">{{ products|length }} ta mahsulot</span>
+  </div>
+  <div class="products">
+    {% for product in products %}
+      {% include 'shop/includes/product_card.html' %}
+    {% empty %}
+      <div class="empty-state empty-state--wide"><span class="empty-state__icon" aria-hidden="true">♡</span>
+        <h2>Sevimlilar ro'yxati hozircha bo'sh</h2><p>Mahsulot kartasidagi yurak tugmasi orqali yoqqanlaringizni saqlang.</p>
+        <a href="{% url 'product_list' %}" class="btn btn--primary">Katalogni ko'rish</a>
+      </div>
+    {% endfor %}
+  </div>
+</section>
+{% endblock %}

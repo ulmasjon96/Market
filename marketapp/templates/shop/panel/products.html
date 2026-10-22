@@ -20,7 +20,7 @@
     <tbody>
     {% for p in page_obj %}
       <tr>
-        <td>{% if p.main_image %}<img src="{{ p.main_image.image.url }}" class="thumb" alt="">{% endif %}</td>
+        <td>{% if p.main_image %}<img src="{{ p.main_image.url }}" class="thumb" alt="">{% endif %}</td>
         <td>{{ p.name }}</td>
         <td>{{ p.category.name }}</td>
         <td>

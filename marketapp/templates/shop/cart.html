@@ -16,7 +16,7 @@
       <tr data-id="{{ item.product.id }}" data-price="{{ item.price|stringformat:'s' }}">
         <td class="cart-product">
           {% if item.product.main_image %}
-            <img src="{{ item.product.main_image.image.url }}" alt="" class="thumb">
+            <img src="{{ item.product.main_image.url }}" alt="" class="thumb">
           {% endif %}
           <a href="{% url 'product_detail' item.product.slug %}">{{ item.product.name }}</a>
         </td>

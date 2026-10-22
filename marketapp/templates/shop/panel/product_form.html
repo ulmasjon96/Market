@@ -24,7 +24,7 @@
   <div class="images">
     {% for img in product.images.all %}
       <div class="images__item">
-        <img src="{{ img.image.url }}" alt="">
+        <img src="{{ img.url }}" alt="">
         {% if img.is_main %}<span class="badge badge--ok">Asosiy</span>{% endif %}
         <form method="post" action="{% url 'panel_image_delete' img.pk %}">
           {% csrf_token %}<button class="btn btn--sm btn--danger">O'chirish</button>

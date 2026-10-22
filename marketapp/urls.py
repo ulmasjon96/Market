@@ -5,6 +5,7 @@ from . import views
 urlpatterns = [
     # ===== DO'KON =====
     path('', views.home, name='home'),
+    path('search/suggestions/', views.search_suggestions, name='search_suggestions'),
     path('catalog/', views.product_list, name='product_list'),
     path('category/<slug:category_slug>/', views.product_list, name='category'),
     path('product/<slug:slug>/', views.product_detail, name='product_detail'),
@@ -25,6 +26,9 @@ urlpatterns = [
     path('login/', auth_views.LoginView.as_view(template_name='shop/login.html'), name='login'),
     path('logout/', auth_views.LogoutView.as_view(), name='logout'),
     path('profile/', views.profile, name='profile'),
+    path('wishlist/', views.wishlist, name='wishlist'),
+    path('wishlist/<int:product_id>/toggle/', views.wishlist_toggle, name='wishlist_toggle'),
+    path('product/<int:product_id>/review/', views.product_review_create, name='product_review_create'),
 
     # ===== ADMIN PANEL =====
     path('panel/', views.panel_dashboard, name='panel_dashboard'),

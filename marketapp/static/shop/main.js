@@ -80,6 +80,122 @@ document.documentElement.classList.add('js');
     });
   }
 
+  // ---------- Live search suggestions ----------
+  const searchForm = $('.search[data-suggestions-url]');
+  if (searchForm) {
+    const searchInput = $('input[name="q"]', searchForm);
+    const suggestions = $('#search-suggestions', searchForm);
+    let debounceTimer;
+    let controller;
+    let activeSuggestion = -1;
+
+    const closeSuggestions = () => {
+      suggestions.hidden = true;
+      suggestions.replaceChildren();
+      searchInput.setAttribute('aria-expanded', 'false');
+      searchInput.removeAttribute('aria-activedescendant');
+      activeSuggestion = -1;
+    };
+
+    const chooseSuggestion = (index) => {
+      const links = $$('a[role="option"]', suggestions);
+      if (!links.length) return;
+      activeSuggestion = (index + links.length) % links.length;
+      links.forEach((link, position) => {
+        link.setAttribute('aria-selected', String(position === activeSuggestion));
+        link.classList.toggle('is-active', position === activeSuggestion);
+      });
+      searchInput.setAttribute('aria-activedescendant', links[activeSuggestion].id);
+    };
+
+    const showSuggestions = (results) => {
+      suggestions.replaceChildren();
+      activeSuggestion = -1;
+      if (!results.length) {
+        const empty = document.createElement('p');
+        empty.className = 'search-suggestions__empty';
+        empty.textContent = 'Mos mahsulot topilmadi';
+        suggestions.appendChild(empty);
+      } else {
+        results.forEach((item, index) => {
+          const link = document.createElement('a');
+          link.className = 'search-suggestions__item';
+          link.href = item.url;
+          link.id = `search-suggestion-${index}`;
+          link.setAttribute('role', 'option');
+          link.setAttribute('aria-selected', 'false');
+
+          if (item.image) {
+            const image = document.createElement('img');
+            image.src = item.image;
+            image.alt = '';
+            image.loading = 'lazy';
+            link.appendChild(image);
+          }
+          const copy = document.createElement('span');
+          copy.className = 'search-suggestions__copy';
+          const name = document.createElement('strong');
+          name.textContent = item.name;
+          const category = document.createElement('small');
+          category.textContent = item.category;
+          copy.append(name, category);
+          const price = document.createElement('b');
+          price.textContent = `${fmt(item.price)} so'm`;
+          link.append(copy, price);
+          suggestions.appendChild(link);
+        });
+      }
+      suggestions.hidden = false;
+      searchInput.setAttribute('aria-expanded', 'true');
+    };
+
+    searchInput.addEventListener('input', () => {
+      clearTimeout(debounceTimer);
+      if (controller) controller.abort();
+      const query = searchInput.value.trim();
+      if (query.length < 2) return closeSuggestions();
+      debounceTimer = setTimeout(async () => {
+        controller = new AbortController();
+        try {
+          const url = new URL(searchForm.dataset.suggestionsUrl, location.origin);
+          url.searchParams.set('q', query);
+          const response = await fetch(url, { signal: controller.signal, headers: { Accept: 'application/json' } });
+          if (!response.ok) return closeSuggestions();
+          const data = await response.json();
+          if (searchInput.value.trim() === query) showSuggestions(data.results || []);
+        } catch (error) {
+          if (error.name !== 'AbortError') closeSuggestions();
+        }
+      }, 180);
+    });
+
+    searchInput.addEventListener('keydown', (event) => {
+      if (suggestions.hidden) return;
+      const total = $$('a[role="option"]', suggestions).length;
+      if (event.key === 'ArrowDown' && total) {
+        event.preventDefault();
+        chooseSuggestion(activeSuggestion + 1);
+      } else if (event.key === 'ArrowUp' && total) {
+        event.preventDefault();
+        chooseSuggestion(activeSuggestion < 0 ? total - 1 : activeSuggestion - 1);
+      } else if (event.key === 'Enter' && activeSuggestion >= 0) {
+        event.preventDefault();
+        $$('a[role="option"]', suggestions)[activeSuggestion].click();
+      } else if (event.key === 'Escape') {
+        closeSuggestions();
+      }
+    });
+    document.addEventListener('click', (event) => {
+      if (!searchForm.contains(event.target)) closeSuggestions();
+    });
+    searchInput.addEventListener('focus', () => {
+      if (searchInput.value.trim().length >= 2 && suggestions.childElementCount) {
+        suggestions.hidden = false;
+        searchInput.setAttribute('aria-expanded', 'true');
+      }
+    });
+  }
+
   // ---------- Savatga qo'shish ----------
   $$('.add-to-cart').forEach((form) => {
     form.addEventListener('submit', async (e) => {

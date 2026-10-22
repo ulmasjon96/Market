@@ -1,5 +1,7 @@
 from django.db import models
 from django.contrib.auth.models import User
+from django.core.exceptions import ValidationError
+from django.contrib.staticfiles.storage import staticfiles_storage
 
 class Category(models.Model):
     name = models.CharField(max_length=100)
@@ -20,6 +22,7 @@ class Product(models.Model):
     discount_price = models.DecimalField("Chegirma narxi", max_digits=12, decimal_places=2, null=True, blank=True)
     stock = models.PositiveIntegerField("Omborda", default=0)
     is_active = models.BooleanField(default=True)
+    is_demo = models.BooleanField("Namuna mahsulot", default=False)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -39,8 +42,78 @@ class Product(models.Model):
     
 class ProductImage(models.Model):
     product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name='images')
-    image = models.ImageField(upload_to='products/')
+    image = models.ImageField(upload_to='products/', blank=True)
+    static_path = models.CharField(max_length=255, blank=True)
     is_main = models.BooleanField(default=False)
+
+    @property
+    def url(self):
+        if self.static_path:
+            return staticfiles_storage.url(self.static_path)
+        return self.image.url if self.image else ''
+
+    @property
+    def is_static_asset(self):
+        return bool(self.static_path)
+
+
+class WishlistItem(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='wishlist_items')
+    product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name='wishlisted_by')
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-created_at']
+        constraints = [
+            models.UniqueConstraint(fields=['user', 'product'], name='unique_user_wishlist_product'),
+        ]
+
+    def __str__(self):
+        return f'{self.user} — {self.product}'
+
+
+class ProductReview(models.Model):
+    RATING_CHOICES = [(value, str(value)) for value in range(1, 6)]
+
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='product_reviews')
+    product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name='reviews')
+    rating = models.PositiveSmallIntegerField(choices=RATING_CHOICES)
+    comment = models.TextField('Izoh', blank=True, max_length=2000)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['-created_at']
+        constraints = [
+            models.UniqueConstraint(fields=['user', 'product'], name='unique_user_product_review'),
+        ]
+
+    def __str__(self):
+        return f'{self.product} — {self.rating}/5 ({self.user})'
+
+
+class PromoBanner(models.Model):
+    title = models.CharField(max_length=160)
+    subtitle = models.CharField(max_length=240, blank=True)
+    image = models.ImageField(upload_to='banners/', blank=True)
+    button_text = models.CharField(max_length=60, blank=True)
+    button_url = models.CharField(max_length=500, blank=True)
+    is_active = models.BooleanField(default=False)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['-updated_at']
+        verbose_name = 'Aksiya banneri'
+        verbose_name_plural = 'Aksiya bannerlari'
+
+    def __str__(self):
+        return self.title
+
+    def clean(self):
+        super().clean()
+        url = (self.button_url or '').strip()
+        if url and not (url.startswith('/') and not url.startswith('//')) and not url.startswith('https://'):
+            raise ValidationError({'button_url': 'Tugma havolasi / bilan boshlanuvchi ichki yo‘l yoki https:// havola bo‘lishi kerak.'})
 
 class Profile(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='profile')

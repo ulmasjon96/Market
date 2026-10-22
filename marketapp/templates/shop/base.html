@@ -19,10 +19,14 @@
 					<span class="logo__copy"><strong>MyShop</strong><small>Onlayn do'kon</small></span>
 				</a>
 
-				<form action="{% url 'product_list' %}" method="get" class="search" role="search">
+				<form action="{% url 'product_list' %}" method="get" class="search" role="search"
+					data-suggestions-url="{% url 'search_suggestions' %}">
 					<label class="sr-only" for="site-search">Mahsulot qidirish</label>
-					<input id="site-search" type="search" name="q" value="{{ q|default:'' }}" placeholder="Mahsulot qidirish..." />
+					<input id="site-search" type="search" name="q" value="{{ q|default:'' }}"
+						placeholder="Mahsulot qidirish..." autocomplete="off" aria-autocomplete="list"
+						aria-controls="search-suggestions" aria-expanded="false" />
 					<button type="submit">Qidirish</button>
+					<div class="search-suggestions" id="search-suggestions" role="listbox" aria-label="Qidiruv takliflari" hidden></div>
 				</form>
 
 				<button class="burger" id="burger" type="button" aria-label="Menyuni ochish" aria-controls="nav" aria-expanded="false">
@@ -33,11 +37,13 @@
 					<a href="{% url 'product_list' %}">Katalog</a>
 					{% if user.is_authenticated %}
 						{% if user.is_staff %}<a href="{% url 'panel_dashboard' %}">Boshqaruv</a>{% endif %}
+						<a href="{% url 'wishlist' %}" class="wishlist-link">Sevimlilar <span class="badge">{{ wishlist_count }}</span></a>
 						<a href="{% url 'profile' %}">{{ user.first_name|default:user.username }}</a>
 						<form method="post" action="{% url 'logout' %}" class="inline">
 							{% csrf_token %}<button class="link">Chiqish</button>
 						</form>
 					{% else %}
+						<a href="{% url 'wishlist' %}">Sevimlilar</a>
 						<a href="{% url 'login' %}">Kirish</a>
 						<a href="{% url 'register' %}">Ro'yxatdan o'tish</a>
 					{% endif %}
@@ -47,6 +53,7 @@
 				</nav>
 			</div>
 		</header>
+		<div class="demo-notice" role="note"><div class="container"><strong>Demo katalogi</strong><span>Mahsulotlar, rasmlar va narxlar namuna uchun — haqiqiy savdo taklifi emas.</span></div></div>
 
 		{% if messages %}
 		<div class="container messages" role="status" aria-live="polite">

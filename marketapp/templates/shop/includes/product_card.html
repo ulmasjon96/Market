@@ -1,17 +1,37 @@
 {% load humanize %}
-<article class="product-card">
+<article class="product-card{% if product.is_demo %} product-card--demo{% endif %}">
   <a href="{% url 'product_detail' product.slug %}" class="product-card__img" aria-label="{{ product.name }} mahsulotini ko'rish">
     {% if product.main_image %}
-      <img src="{{ product.main_image.image.url }}" alt="{{ product.name }}" loading="lazy">
+      <img src="{{ product.main_image.url }}" alt="{{ product.name }}" loading="lazy">
     {% else %}
       <span class="no-image"><span aria-hidden="true">M</span>Rasm yo'q</span>
     {% endif %}
     {% if product.discount_price %}<span class="product-card__sale">Chegirma</span>{% endif %}
+    {% if product.is_demo %}<span class="product-card__demo">DEMO</span>{% endif %}
   </a>
+
+  {% if user.is_authenticated %}
+    <form class="wishlist-toggle" method="post" action="{% url 'wishlist_toggle' product.id %}">
+      {% csrf_token %}<input type="hidden" name="next" value="{{ request.get_full_path }}">
+      <button type="submit" aria-label="{% if product.id in wishlist_product_ids %}Sevimlilardan olib tashlash{% else %}Sevimlilarga qo'shish{% endif %}"
+        title="{% if product.id in wishlist_product_ids %}Sevimlilardan olib tashlash{% else %}Sevimlilarga qo'shish{% endif %}"
+        class="wishlist-toggle__button{% if product.id in wishlist_product_ids %} is-active{% endif %}">
+        {% if product.id in wishlist_product_ids %}♥{% else %}♡{% endif %}
+      </button>
+    </form>
+  {% else %}
+    <a class="wishlist-toggle__button wishlist-toggle__login" href="{% url 'login' %}?next={% url 'product_detail' product.slug %}" aria-label="Sevimlilarga qo'shish" title="Sevimlilarga qo'shish">♡</a>
+  {% endif %}
 
   <div class="product-card__body">
     <a href="{% url 'category' product.category.slug %}" class="product-card__category">{{ product.category.name }}</a>
     <a href="{% url 'product_detail' product.slug %}" class="product-card__name">{{ product.name }}</a>
+
+    {% if product.review_count %}
+      <div class="product-rating" aria-label="{{ product.average_rating|floatformat:1 }} yulduz, {{ product.review_count }} ta sharh">
+        <span aria-hidden="true">★</span> {{ product.average_rating|floatformat:1 }} <small>({{ product.review_count }})</small>
+      </div>
+    {% else %}<div class="product-rating product-rating--empty">Hali baholanmagan</div>{% endif %}
 
     <div class="price">
       {% if product.discount_price %}

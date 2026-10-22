@@ -8,10 +8,10 @@
   <p>To'lov summasi: <b>{{ order.total_price|floatformat:0|intcomma }} so'm</b></p>
   <p>To'lov usuli: <b>{{ order.get_payment_method_display }}</b></p>
 
-  {# TODO: Click / Payme havolasi view'da yasaladi va shu yerga qo'yiladi #}
-  <a href="#" class="btn btn--primary btn--block">To'lovga o'tish</a>
-
-  <p class="muted small">To'lov tizimi tez orada ulanadi. Hozircha operator siz bilan bog'lanadi.</p>
-  <a href="{% url 'order_success' order.id %}" class="btn btn--block">Keyinroq to'layman</a>
+  <div class="tracking-notice">Bu demo do'konda avtomatik Click/Payme to'lovi ulanmagan. Buyurtmangiz saqlandi, to'lovni operator bilan kelishish mumkin.</div>
+  {% if user.is_authenticated and order.user_id == user.id %}
+    <a href="{% url 'order_detail' order.id %}" class="btn btn--primary btn--block">Buyurtmani kuzatish</a>
+  {% endif %}
+  <a href="{% url 'order_success' order.id %}" class="btn btn--block">Bosh sahifaga qaytish</a>
 </div>
 {% endblock %}

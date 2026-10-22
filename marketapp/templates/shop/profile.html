@@ -4,6 +4,7 @@
 
 {% block content %}
 <h1>Salom, {{ user.first_name|default:user.username }}!</h1>
+<p><a class="btn" href="{% url 'wishlist' %}">♡ Sevimlilar ({{ wishlist_count }})</a></p>
 
 <div class="profile">
   <form method="post" class="card form">

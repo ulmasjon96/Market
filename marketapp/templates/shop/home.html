@@ -2,6 +2,16 @@
 {% block title %}MyShop — Bosh sahifa{% endblock %}
 
 {% block content %}
+{% if promo_banner %}
+<section class="promo-banner" aria-label="Aksiya">
+  {% if promo_banner.image %}<img class="promo-banner__image" src="{{ promo_banner.image.url }}" alt="" loading="lazy">{% endif %}
+  <div class="promo-banner__copy"><span class="section__kicker">DO'KON YANGILIGI</span><h2>{{ promo_banner.title }}</h2>
+    {% if promo_banner.subtitle %}<p>{{ promo_banner.subtitle }}</p>{% endif %}
+    {% if promo_banner.button_text and promo_banner.button_url %}<a class="btn btn--primary" href="{{ promo_banner.button_url }}">{{ promo_banner.button_text }}</a>{% endif %}
+  </div>
+</section>
+{% endif %}
+
 <section class="hero" aria-labelledby="hero-title">
   <div class="hero__text">
     <span class="eyebrow"><span class="eyebrow__dot"></span> MYSHOP ONLAYN DO'KONI</span>

@@ -18,6 +18,23 @@
   {% if order.comment %}<p><b>Izoh:</b> {{ order.comment }}</p>{% endif %}
 </div>
 
+{% if order.status == 'canceled' %}
+  <div class="tracking-notice tracking-notice--canceled">Bu buyurtma bekor qilingan.</div>
+{% else %}
+  <section class="card tracking" aria-label="Buyurtma holati">
+    <h2>Buyurtma jarayoni</h2>
+    <ol class="tracking__steps">
+      {% for step in status_progress %}
+        <li class="tracking__step{% if step.complete %} is-complete{% endif %}{% if step.current %} is-current{% endif %}">
+          <span class="tracking__marker" aria-hidden="true">{% if step.complete %}✓{% else %}{{ forloop.counter }}{% endif %}</span>
+          <span>{{ step.label }}</span>
+        </li>
+      {% endfor %}
+    </ol>
+    <p class="muted small">Buyurtma holati do'kon tomonidan yangilanganda shu sahifada ko'rinadi.</p>
+  </section>
+{% endif %}
+
 <div class="card">
   <table class="table">
     <thead><tr><th>Mahsulot</th><th>Narx</th><th>Soni</th><th>Jami</th></tr></thead>
@@ -41,5 +58,8 @@
       <tr><th colspan="3">Umumiy</th><th>{{ order.total_price|floatformat:0|intcomma }} so'm</th></tr>
     </tfoot>
   </table>
+</div>
+<div class="tracking-notice"><strong>To'lov:</strong> {{ order.get_payment_method_display }} usuli tanlangan.
+  {% if not order.is_paid %}To'lov hali tasdiqlanmagan; Click va Payme uchun avtomatik to'lov havolasi ulanmagan.{% else %}To'lov tasdiqlangan.{% endif %}
 </div>
 {% endblock %}

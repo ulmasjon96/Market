@@ -7,12 +7,17 @@ from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth.models import User
 from django.core.paginator import Paginator
 from django.db import transaction
-from django.db.models import Q, F
+from django.db.models import Q, F, Count, Avg, Sum
 from django.http import JsonResponse
 from django.shortcuts import render, get_object_or_404, redirect
+from django.urls import reverse
+from django.utils.http import url_has_allowed_host_and_scheme
 from django.views.decorators.http import require_POST
 
-from .models import Category, Product, Order, OrderItem, Profile
+from .models import (
+    Category, Product, Order, OrderItem, Profile, WishlistItem,
+    ProductReview, PromoBanner,
+)
 
 
 CART_KEY = 'cart'
@@ -53,6 +58,16 @@ class Cart:
 def cart_count(request):
        return {'cart_count': len(Cart(request))}
 
+
+def wishlist_context(request):
+    if not request.user.is_authenticated:
+        return {'wishlist_count': 0, 'wishlist_product_ids': []}
+    items = WishlistItem.objects.filter(user=request.user)
+    return {
+        'wishlist_count': items.count(),
+        'wishlist_product_ids': list(items.values_list('product_id', flat=True)),
+    }
+
 PHONE_ATTRS = {'placeholder': '+998901234567', 'pattern': r'\+998\d{9}'}
 class RegisterForm(UserCreationForm):
     first_name = forms.CharField(label='Ism', max_length=50)
@@ -81,20 +96,35 @@ class CheckoutForm(forms.ModelForm):
         }
 
 
+class ProductReviewForm(forms.ModelForm):
+    class Meta:
+        model = ProductReview
+        fields = ('rating', 'comment')
+        widgets = {
+            'rating': forms.Select(attrs={'class': 'form-control'}),
+            'comment': forms.Textarea(attrs={'rows': 4, 'maxlength': 2000}),
+        }
+
+
 # ==================== KATALOG =================
 
 
 def home(request):
-    products = Product.objects.filter(is_active=True).prefetch_related('images')
+    products = Product.objects.filter(is_active=True).annotate(
+        review_count=Count('reviews'), average_rating=Avg('reviews__rating'),
+    ).prefetch_related('images')
     return render(request, 'shop/home.html', {
         'categories': Category.objects.filter(parent__isnull=True),
         'new_products': products[:8],
         'sale_products': products.filter(discount_price__isnull=False)[:8],
+        'promo_banner': PromoBanner.objects.filter(is_active=True).first(),
     })
 
 
 def product_list(request, category_slug=None):
-    products = Product.objects.filter(is_active=True).prefetch_related('images')
+    products = Product.objects.filter(is_active=True).annotate(
+        review_count=Count('reviews'), average_rating=Avg('reviews__rating'),
+    ).prefetch_related('images')
     category = None
     if category_slug:
         category = get_object_or_404(Category, slug=category_slug)
@@ -120,9 +150,44 @@ def product_list(request, category_slug=None):
 
 
 def product_detail(request, slug):
-    product = get_object_or_404(Product.objects.prefetch_related('images'), slug=slug, is_active=True)
-    related = Product.objects.filter(category=product.category, is_active=True).exclude(id=product.id)[:4]
-    return render(request, 'shop/product_detail.html', {'product': product, 'related': related})
+    product = get_object_or_404(
+        Product.objects.annotate(review_count=Count('reviews'), average_rating=Avg('reviews__rating'))
+        .prefetch_related('images', 'reviews__user'),
+        slug=slug, is_active=True,
+    )
+    related = Product.objects.filter(category=product.category, is_active=True).exclude(id=product.id) \
+        .annotate(review_count=Count('reviews'), average_rating=Avg('reviews__rating')) \
+        .prefetch_related('images')[:4]
+    user_review = None
+    can_review = False
+    if request.user.is_authenticated:
+        user_review = ProductReview.objects.filter(user=request.user, product=product).first()
+        can_review = OrderItem.objects.filter(order__user=request.user, product=product).exists()
+    return render(request, 'shop/product_detail.html', {
+        'product': product, 'related': related, 'user_review': user_review,
+        'reviews': product.reviews.all(),
+        'review_form': ProductReviewForm(instance=user_review), 'can_review': can_review,
+    })
+
+
+def search_suggestions(request):
+    query = request.GET.get('q', '').strip()
+    if len(query) < 2:
+        return JsonResponse({'results': []})
+    products = Product.objects.filter(is_active=True, name__icontains=query) \
+        .annotate(review_count=Count('reviews'), average_rating=Avg('reviews__rating')) \
+        .prefetch_related('images')[:6]
+    results = []
+    for product in products:
+        image = product.main_image
+        results.append({
+            'name': product.name,
+            'url': reverse('product_detail', args=[product.slug]),
+            'category': product.category.name,
+            'price': str(product.final_price),
+            'image': image.url if image else '',
+        })
+    return JsonResponse({'results': results})
 
 
 # ==================== SAVAT ====================
@@ -233,9 +298,66 @@ def profile(request):
 
 
 @login_required
+def wishlist(request):
+    products = Product.objects.filter(wishlisted_by__user=request.user, is_active=True) \
+        .annotate(review_count=Count('reviews'), average_rating=Avg('reviews__rating')) \
+        .prefetch_related('images')
+    return render(request, 'shop/wishlist.html', {'products': products})
+
+
+@login_required
+@require_POST
+def wishlist_toggle(request, product_id):
+    product = get_object_or_404(Product, pk=product_id, is_active=True)
+    item, created = WishlistItem.objects.get_or_create(user=request.user, product=product)
+    if not created:
+        item.delete()
+        messages.info(request, 'Sevimlilardan olib tashlandi')
+    else:
+        messages.success(request, 'Sevimlilarga qo\'shildi')
+
+    next_url = request.POST.get('next', '')
+    if url_has_allowed_host_and_scheme(next_url, allowed_hosts={request.get_host()}, require_https=request.is_secure()):
+        return redirect(next_url)
+    return redirect('wishlist')
+
+
+@login_required
+@require_POST
+def product_review_create(request, product_id):
+    product = get_object_or_404(Product, pk=product_id, is_active=True)
+    if not OrderItem.objects.filter(order__user=request.user, product=product).exists():
+        messages.error(request, 'Sharh qoldirish uchun avval shu mahsulotga buyurtma bering.')
+        return redirect(f"{reverse('product_detail', args=[product.slug])}#reviews")
+
+    review = ProductReview.objects.filter(user=request.user, product=product).first()
+    form = ProductReviewForm(request.POST, instance=review)
+    if form.is_valid():
+        saved_review = form.save(commit=False)
+        saved_review.user = request.user
+        saved_review.product = product
+        saved_review.save()
+        messages.success(request, 'Sharhingiz saqlandi.')
+    else:
+        messages.error(request, 'Bahoni va sharhni tekshirib, qayta yuboring.')
+    return redirect(f"{reverse('product_detail', args=[product.slug])}#reviews")
+
+
+@login_required
 def order_detail(request, order_id):
     order = get_object_or_404(Order, id=order_id, user=request.user)
-    return render(request, 'shop/order_detail.html', {'order': order})
+    steps = [
+        ('new', 'Buyurtma qabul qilindi'),
+        ('paid', 'Buyurtma tasdiqlandi'),
+        ('shipping', 'Yetkazilmoqda'),
+        ('delivered', 'Yetkazildi'),
+    ]
+    current = next((index for index, (status, _) in enumerate(steps) if status == order.status), -1)
+    progress = [
+        {'label': label, 'complete': index < current, 'current': index == current}
+        for index, (_, label) in enumerate(steps)
+    ]
+    return render(request, 'shop/order_detail.html', {'order': order, 'status_progress': progress})
 
 
 # ==================== TO'LOV ====================
@@ -248,7 +370,6 @@ def payment(request, order_id):
 
 
 from django.contrib.auth.decorators import user_passes_test
-from django.db.models import Sum, Count
 from django.utils import timezone
 from django.utils.text import slugify
 from .models import ProductImage
@@ -326,9 +447,11 @@ def panel_product_form(request, pk=None):
             obj.slug = unique_slug(Product, obj.name, obj)
         obj.save()
 
-        has_main = obj.images.filter(is_main=True).exists()
-        for i, f in enumerate(request.FILES.getlist('images')):
-            ProductImage.objects.create(product=obj, image=f, is_main=(not has_main and i == 0))
+        uploads = request.FILES.getlist('images')
+        if uploads:
+            obj.images.update(is_main=False)
+            for i, f in enumerate(uploads):
+                ProductImage.objects.create(product=obj, image=f, is_main=(i == 0))
 
         messages.success(request, "Mahsulot saqlandi")
         return redirect('panel_products')
