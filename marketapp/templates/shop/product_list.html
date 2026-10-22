@@ -3,14 +3,19 @@
 
 {% block content %}
 <div class="catalog">
-  <aside class="catalog__sidebar">
+  <aside class="catalog__sidebar" aria-label="Katalog filtrlari">
+    <div class="catalog__sidebar-head"><span class="section__kicker">MAHSULOTLAR</span><h2>Katalog</h2></div>
+    <details class="catalog__filter-disclosure" open>
+      <summary>Filtrlar va kategoriyalar <span aria-hidden="true">+</span></summary>
+      <div class="catalog__filter-content">
     <h3>Kategoriyalar</h3>
     <ul class="cat-list">
-      <li><a href="{% url 'product_list' %}" class="{% if not category %}active{% endif %}">Barchasi</a></li>
+      <li><a href="{% url 'product_list' %}" class="{% if not category %}active{% endif %}">Barchasi <span aria-hidden="true">&rarr;</span></a></li>
       {% for c in categories %}
         <li>
           <a href="{% url 'category' c.slug %}" class="{% if category and c.id == category.id %}active{% endif %}">
-            {% if c.parent %}— {% endif %}{{ c.name }}
+            <span>{% if c.parent %}<span class="cat-list__indent">—</span>{% endif %}{{ c.name }}</span>
+            <span aria-hidden="true">&rarr;</span>
           </a>
         </li>
       {% endfor %}
@@ -18,40 +23,64 @@
 
     <form method="get" action="{{ request.path }}" class="filters">
       {% if q %}<input type="hidden" name="q" value="{{ q }}">{% endif %}
-
-      <h3>Narx (so'm)</h3>
-      <div class="row">
-        <input type="number" name="min" value="{{ request.GET.min }}" placeholder="dan" min="0">
-        <input type="number" name="max" value="{{ request.GET.max }}" placeholder="gacha" min="0">
+      <h3>Narx oralig'i <small>(so'm)</small></h3>
+      <div class="filters__price-row">
+        <label for="filter-min">Dan
+          <input id="filter-min" type="number" name="min" value="{{ request.GET.min }}" placeholder="0" min="0" inputmode="numeric">
+        </label>
+        <label for="filter-max">Gacha
+          <input id="filter-max" type="number" name="max" value="{{ request.GET.max }}" placeholder="Narx" min="0" inputmode="numeric">
+        </label>
       </div>
 
       <h3>Saralash</h3>
-      <select name="sort">
-        <option value="new" {% if request.GET.sort == 'new' %}selected{% endif %}>Yangilari</option>
-        <option value="cheap" {% if request.GET.sort == 'cheap' %}selected{% endif %}>Arzonroq</option>
-        <option value="expensive" {% if request.GET.sort == 'expensive' %}selected{% endif %}>Qimmatroq</option>
+      <label class="sr-only" for="filter-sort">Mahsulotlarni saralash</label>
+      <select id="filter-sort" name="sort">
+        <option value="new" {% if request.GET.sort == 'new' or not request.GET.sort %}selected{% endif %}>Yangilari</option>
+        <option value="cheap" {% if request.GET.sort == 'cheap' %}selected{% endif %}>Arzonidan</option>
+        <option value="expensive" {% if request.GET.sort == 'expensive' %}selected{% endif %}>Qimmatidan</option>
       </select>
 
-      <button class="btn btn--primary btn--block">Qo'llash</button>
-      <a href="{{ request.path }}" class="btn btn--block">Tozalash</a>
+      <button class="btn btn--primary btn--block" type="submit">Filtrlarni qo'llash</button>
+      <a href="{{ request.path }}" class="btn btn--block filters__reset">Filtrlarni tozalash</a>
     </form>
+      </div>
+    </details>
   </aside>
 
-  <section class="catalog__main">
+  <section class="catalog__main" aria-label="Mahsulotlar ro'yxati">
     <div class="catalog__head">
-      <h1>
-        {% if q %}"{{ q }}" bo'yicha natijalar
-        {% elif category %}{{ category.name }}
-        {% else %}Katalog{% endif %}
-      </h1>
-      <span class="muted">{{ page_obj.paginator.count }} ta mahsulot</span>
+      <div>
+        <span class="section__kicker">O'ZINGIZGA KERAKLISINI TOPING</span>
+        <h1>
+          {% if q %}"{{ q }}" bo'yicha natijalar
+          {% elif category %}{{ category.name }}
+          {% else %}Barcha mahsulotlar{% endif %}
+        </h1>
+      </div>
+      <span class="catalog__count">{{ page_obj.paginator.count }} ta mahsulot</span>
     </div>
+
+    {% if q or request.GET.min or request.GET.max %}
+      <div class="filter-summary" aria-live="polite">
+        <span>Faol filtrlar:</span>
+        {% if q %}<span class="filter-chip">Qidiruv: {{ q }}</span>{% endif %}
+        {% if request.GET.min %}<span class="filter-chip">Dan {{ request.GET.min }} so'm</span>{% endif %}
+        {% if request.GET.max %}<span class="filter-chip">Gacha {{ request.GET.max }} so'm</span>{% endif %}
+        <a href="{{ request.path }}">Tozalash</a>
+      </div>
+    {% endif %}
 
     <div class="products">
       {% for product in page_obj %}
         {% include 'shop/includes/product_card.html' %}
       {% empty %}
-        <p class="muted">Hech narsa topilmadi.</p>
+        <div class="empty-state empty-state--wide">
+          <span class="empty-state__icon" aria-hidden="true">?</span>
+          <h2>Mahsulot topilmadi</h2>
+          <p>Qidiruv so'zini yoki narx filtrlarini o'zgartirib ko'ring.</p>
+          <a href="{{ request.path }}" class="btn btn--primary">Filtrlarni tozalash</a>
+        </div>
       {% endfor %}
     </div>
 

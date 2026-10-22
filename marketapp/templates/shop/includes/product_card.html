@@ -1,20 +1,21 @@
 {% load humanize %}
-<div class="product-card">
-  <a href="{% url 'product_detail' product.slug %}" class="product-card__img">
+<article class="product-card">
+  <a href="{% url 'product_detail' product.slug %}" class="product-card__img" aria-label="{{ product.name }} mahsulotini ko'rish">
     {% if product.main_image %}
       <img src="{{ product.main_image.image.url }}" alt="{{ product.name }}" loading="lazy">
     {% else %}
-      <div class="no-image">Rasm yo'q</div>
+      <span class="no-image"><span aria-hidden="true">M</span>Rasm yo'q</span>
     {% endif %}
     {% if product.discount_price %}<span class="product-card__sale">Chegirma</span>{% endif %}
   </a>
 
   <div class="product-card__body">
+    <a href="{% url 'category' product.category.slug %}" class="product-card__category">{{ product.category.name }}</a>
     <a href="{% url 'product_detail' product.slug %}" class="product-card__name">{{ product.name }}</a>
 
     <div class="price">
       {% if product.discount_price %}
-        <s>{{ product.price|floatformat:0|intcomma }}</s>
+        <s>{{ product.price|floatformat:0|intcomma }} so'm</s>
         <b>{{ product.discount_price|floatformat:0|intcomma }} so'm</b>
       {% else %}
         <b>{{ product.price|floatformat:0|intcomma }} so'm</b>
@@ -22,13 +23,15 @@
     </div>
 
     {% if product.stock > 0 %}
+      <span class="product-card__stock product-card__stock--available">Sotuvda mavjud</span>
       <form method="post" action="{% url 'cart_add' product.id %}" class="add-to-cart">
         {% csrf_token %}
         <input type="hidden" name="quantity" value="1">
-        <button class="btn btn--primary btn--block">Savatga</button>
+        <button class="btn btn--primary btn--block" type="submit">Savatga <span aria-hidden="true">&rarr;</span></button>
       </form>
     {% else %}
+      <span class="product-card__stock">Hozircha tugagan</span>
       <button class="btn btn--block" disabled>Tugagan</button>
     {% endif %}
   </div>
-</div>
+</article>

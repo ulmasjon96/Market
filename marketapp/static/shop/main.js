@@ -48,7 +48,37 @@ document.documentElement.classList.add('js');
   // ---------- Mobil menyu ----------
   const burger = $('#burger');
   const nav = $('#nav');
-  if (burger && nav) burger.addEventListener('click', () => nav.classList.toggle('open'));
+  if (burger && nav) {
+    const setMenuOpen = (isOpen) => {
+      nav.classList.toggle('open', isOpen);
+      burger.setAttribute('aria-expanded', String(isOpen));
+      burger.setAttribute('aria-label', isOpen ? 'Menyuni yopish' : 'Menyuni ochish');
+    };
+
+    burger.addEventListener('click', () => setMenuOpen(burger.getAttribute('aria-expanded') !== 'true'));
+    nav.addEventListener('click', (event) => {
+      if (event.target.closest('a')) setMenuOpen(false);
+    });
+    document.addEventListener('keydown', (event) => {
+      if (event.key === 'Escape' && nav.classList.contains('open')) {
+        setMenuOpen(false);
+        burger.focus();
+      }
+    });
+    window.addEventListener('resize', () => {
+      if (window.innerWidth > 960) setMenuOpen(false);
+    });
+  }
+
+  // ---------- Mobil katalog filtrlari ----------
+  const filterDisclosure = $('.catalog__filter-disclosure');
+  if (filterDisclosure) {
+    const compactFilters = window.matchMedia('(max-width: 760px)');
+    if (compactFilters.matches) filterDisclosure.open = false;
+    compactFilters.addEventListener('change', (event) => {
+      if (!event.matches) filterDisclosure.open = true;
+    });
+  }
 
   // ---------- Savatga qo'shish ----------
   $$('.add-to-cart').forEach((form) => {

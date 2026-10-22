@@ -2,22 +2,67 @@
 {% block title %}MyShop — Bosh sahifa{% endblock %}
 
 {% block content %}
-<section class="hero">
+<section class="hero" aria-labelledby="hero-title">
   <div class="hero__text">
-    <h1>Sifatli mahsulotlar — qulay narxlarda</h1>
-    <p>Buyurtma bering, uyingizgacha yetkazib beramiz.</p>
-    <a href="{% url 'product_list' %}" class="btn btn--primary">Katalogga o'tish</a>
+    <span class="eyebrow"><span class="eyebrow__dot"></span> MYSHOP ONLAYN DO'KONI</span>
+    <h1 id="hero-title">Kerakli mahsulotlar, <span>qulay xarid.</span></h1>
+    <p>Kategoriyalarni ko'ring, narxlarni ko'rib chiqing va buyurtmangizni bir necha qadamda rasmiylashtiring.</p>
+    <div class="hero__actions">
+      <a href="{% url 'product_list' %}" class="btn btn--primary">Katalogni ko'rish <span aria-hidden="true">&rarr;</span></a>
+      <a href="#categories" class="hero__link">Kategoriyalar bilan tanishing</a>
+    </div>
+  </div>
+  <div class="hero__art" aria-hidden="true">
+    <div class="hero__orb hero__orb--one"></div>
+    <div class="hero__orb hero__orb--two"></div>
+    <div class="hero__tile">
+      <span class="hero__tile-kicker">YAXSHI TANLOV</span>
+      <div class="hero__tile-art">
+        <span class="hero__tile-disc hero__tile-disc--one"></span>
+        <span class="hero__tile-disc hero__tile-disc--two"></span>
+        <span class="hero__tile-disc hero__tile-disc--three"></span>
+      </div>
+      <span class="hero__tile-name">Har kun uchun</span>
+      <span class="hero__tile-caption">O'zingizga keraklisini toping</span>
+    </div>
+    <div class="hero__float hero__float--top"><span class="hero__float-mark">01</span><span>Oson qidiruv</span></div>
+    <div class="hero__float hero__float--bottom"><span class="hero__float-check">&#10003;</span><span>Savatga qo'shing</span></div>
   </div>
 </section>
 
+<section class="benefits" aria-label="Xarid qilish qulayliklari">
+  <article class="benefit">
+    <span class="benefit__number">01</span>
+    <div><h2>Qulay qidiruv</h2><p>Kerakli mahsulotni tez toping.</p></div>
+  </article>
+  <article class="benefit">
+    <span class="benefit__number">02</span>
+    <div><h2>Oson tanlov</h2><p>Kategoriyalarni ko'rib chiqing.</p></div>
+  </article>
+  <article class="benefit">
+    <span class="benefit__number">03</span>
+    <div><h2>Qulay buyurtma</h2><p>Tanlovingizni savatda rasmiylashtiring.</p></div>
+  </article>
+</section>
+
 {% if categories %}
-<section class="section">
-  <h2 class="section__title">Kategoriyalar</h2>
+<section class="section" id="categories">
+  <div class="section__head">
+    <div><span class="section__kicker">TANLOVNI BOSHLANG</span><h2 class="section__title">Kategoriyalar</h2></div>
+    <a class="section__link" href="{% url 'product_list' %}">Barcha mahsulotlar <span aria-hidden="true">&rarr;</span></a>
+  </div>
   <div class="categories">
     {% for c in categories %}
       <a href="{% url 'category' c.slug %}" class="category-card">
-        {% if c.image %}<img src="{{ c.image.url }}" alt="{{ c.name }}" loading="lazy">{% endif %}
-        <span>{{ c.name }}</span>
+        <span class="category-card__visual">
+          {% if c.image %}
+            <img src="{{ c.image.url }}" alt="" loading="lazy">
+          {% else %}
+            <span class="category-card__initial" aria-hidden="true">{{ c.name|slice:":1"|upper }}</span>
+          {% endif %}
+        </span>
+        <span class="category-card__name">{{ c.name }}</span>
+        <span class="category-card__arrow" aria-hidden="true">&rarr;</span>
       </a>
     {% endfor %}
   </div>
@@ -27,8 +72,8 @@
 {% if sale_products %}
 <section class="section">
   <div class="section__head">
-    <h2 class="section__title">🔥 Chegirmalar</h2>
-    <a href="{% url 'product_list' %}">Barchasi →</a>
+    <div><span class="section__kicker">YAXSHI TAKLIFLAR</span><h2 class="section__title">Chegirmadagi mahsulotlar</h2></div>
+    <a class="section__link" href="{% url 'product_list' %}">Barchasini ko'rish <span aria-hidden="true">&rarr;</span></a>
   </div>
   <div class="products">
     {% for product in sale_products %}
@@ -40,14 +85,14 @@
 
 <section class="section">
   <div class="section__head">
-    <h2 class="section__title">Yangi mahsulotlar</h2>
-    <a href="{% url 'product_list' %}">Barchasi →</a>
+    <div><span class="section__kicker">SO'NGGI QO'SHILGANLAR</span><h2 class="section__title">Yangi mahsulotlar</h2></div>
+    <a class="section__link" href="{% url 'product_list' %}">Barchasini ko'rish <span aria-hidden="true">&rarr;</span></a>
   </div>
   <div class="products">
     {% for product in new_products %}
       {% include 'shop/includes/product_card.html' %}
     {% empty %}
-      <p class="muted">Hozircha mahsulotlar yo'q.</p>
+      <div class="empty-state"><span class="empty-state__icon">M</span><h3>Hozircha mahsulot yo'q</h3><p>Yangi mahsulotlar qo'shilganda shu yerda ko'rinadi.</p></div>
     {% endfor %}
   </div>
 </section>

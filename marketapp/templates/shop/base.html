@@ -4,56 +4,88 @@
 	<head>
 		<meta charset="UTF-8" />
 		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<meta name="theme-color" content="#f5f7f4" />
 		<title>{% block title %}MyShop{% endblock %}</title>
 		<link rel="stylesheet" href="{% static 'includes/components.css' %}" />
 		<link rel="stylesheet" href="{% static 'shop/style.css' %}" />
 		{% block extra_head %}{% endblock %}
 	</head>
 	<body>
+		<a class="skip-link" href="#main-content">Asosiy qismga o'tish</a>
 		<header class="header">
 			<div class="container header__inner">
-				<a href="{% url 'home' %}" class="logo">MyShop</a>
+				<a href="{% url 'home' %}" class="logo" aria-label="MyShop bosh sahifasi">
+					<span class="logo__mark" aria-hidden="true">M</span>
+					<span class="logo__copy"><strong>MyShop</strong><small>Onlayn do'kon</small></span>
+				</a>
 
-				<form action="{% url 'product_list' %}" method="get" class="search">
-					<input type="search" name="q" value="{{ q|default:'' }}" placeholder="Mahsulot qidirish..." />
+				<form action="{% url 'product_list' %}" method="get" class="search" role="search">
+					<label class="sr-only" for="site-search">Mahsulot qidirish</label>
+					<input id="site-search" type="search" name="q" value="{{ q|default:'' }}" placeholder="Mahsulot qidirish..." />
 					<button type="submit">Qidirish</button>
 				</form>
 
-				<button class="burger" id="burger" aria-label="Menyu">☰</button>
+				<button class="burger" id="burger" type="button" aria-label="Menyuni ochish" aria-controls="nav" aria-expanded="false">
+					<span></span><span></span><span></span>
+				</button>
 
-				<nav class="nav" id="nav">
+				<nav class="nav" id="nav" aria-label="Asosiy menyu">
 					<a href="{% url 'product_list' %}">Katalog</a>
 					{% if user.is_authenticated %}
-						{% if user.is_staff %}
-							<a href="{% url 'panel_dashboard' %}">Panel</a>
-						{% endif %}
-					<a href="{% url 'profile' %}">{{ user.first_name|default:user.username }}</a>
-					<form method="post" action="{% url 'logout' %}" class="inline">
-						{% csrf_token %}<button class="link">Chiqish</button>
-					</form>
+						{% if user.is_staff %}<a href="{% url 'panel_dashboard' %}">Boshqaruv</a>{% endif %}
+						<a href="{% url 'profile' %}">{{ user.first_name|default:user.username }}</a>
+						<form method="post" action="{% url 'logout' %}" class="inline">
+							{% csrf_token %}<button class="link">Chiqish</button>
+						</form>
 					{% else %}
-					<a href="{% url 'login' %}">Kirish</a>
-					<a href="{% url 'register' %}">Ro'yxatdan o'tish</a>
+						<a href="{% url 'login' %}">Kirish</a>
+						<a href="{% url 'register' %}">Ro'yxatdan o'tish</a>
 					{% endif %}
 					<a href="{% url 'cart_detail' %}" class="cart-link">
-						🛒 Savat <span class="badge" id="cart-count">{{ cart_count|default:0 }}</span>
+						Savat <span class="badge" id="cart-count">{{ cart_count|default:0 }}</span>
 					</a>
 				</nav>
 			</div>
 		</header>
 
 		{% if messages %}
-		<div class="container messages">
+		<div class="container messages" role="status" aria-live="polite">
 			{% for m in messages %}
 			<div class="alert alert--{{ m.tags }}">{{ m }}</div>
 			{% endfor %}
 		</div>
 		{% endif %}
 
-		<main class="container main">{% block content %}{% endblock %}</main>
+		<main id="main-content" class="container main">{% block content %}{% endblock %}</main>
 
 		<footer class="footer">
-			<div class="container">© {% now "Y" %} MyShop. Barcha huquqlar himoyalangan. Loyiha muallifi: Ulmasjon.</div>
+			<div class="container footer__grid">
+				<div class="footer__brand">
+					<a href="{% url 'home' %}" class="logo logo--footer">
+						<span class="logo__mark" aria-hidden="true">M</span>
+						<span class="logo__copy"><strong>MyShop</strong><small>Onlayn do'kon</small></span>
+					</a>
+					<p>Kerakli mahsulotlarni toping va buyurtmani saytda rasmiylashtiring.</p>
+				</div>
+				<div class="footer__column">
+					<h2>Do'kon</h2>
+					<a href="{% url 'product_list' %}">Katalog</a>
+					<a href="{% url 'cart_detail' %}">Savat</a>
+				</div>
+				<div class="footer__column">
+					<h2>Hisob</h2>
+					{% if user.is_authenticated %}
+						<a href="{% url 'profile' %}">Profilim</a>
+					{% else %}
+						<a href="{% url 'login' %}">Kirish</a>
+						<a href="{% url 'register' %}">Ro'yxatdan o'tish</a>
+					{% endif %}
+				</div>
+				<div class="footer__bottom">
+					<span>&copy; {% now "Y" %} MyShop. Barcha huquqlar himoyalangan.</span>
+					<span>Loyiha muallifi: Ulmasjon.</span>
+				</div>
+			</div>
 		</footer>
 
 		<script src="{% static 'shop/main.js' %}"></script>
